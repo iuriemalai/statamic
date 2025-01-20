@@ -1,86 +1,27 @@
-# Understanding the `$collection->taxonomies()` Method in Statamic
+## Understanding `$collection->taxonomies()` in Statamic
 
-## Statamic's Description
+In Statamic, the `taxonomies` method is used to define or retrieve taxonomies associated with a collection. While the documentation suggests this method works with arrays, it actually returns an `Illuminate\Support\Collection` of `Taxonomy` objects.
 
-In Statamic, collections can be associated with taxonomies to categorize and organize entries. The `taxonomies` method allows you to define or retrieve the taxonomies linked to a collection. According to the [Statamic documentation](https://statamic.dev/collections), you can assign taxonomies to a collection as follows:
+### Key Points:
+1. **Inspecting Taxonomies:**
+   ```php
+   Log::info(print_r($collection->taxonomies(), true));
+   ```
+   This will show a `Collection` of `Taxonomy` objects, not a plain array.
 
-```yaml
-taxonomies:
-  - tags
-  - categories
-```
+2. **Common Pitfall:**
+   The following will not work because taxonomies are returned as objects:
+   ```php
+   $collectionTaxonomies = $collection->taxonomies();
+   $collectionTaxonomies[] = 'new_taxonomy_handle';
+   ```
 
-This configuration associates the `tags` and `categories` taxonomies with the collection. When you call `$collection->taxonomies(['tags'])`, you're attempting to set a new taxonomy to the specified array. This will work, but at the same time it will overwrite taxonomies already attached to the collection.
+3. **Correct Approach:**
+   ```php
+   $collectionTaxonomies = $collection->taxonomies()->pluck('handle')->toArray();
+   $collectionTaxonomies[] = 'new_taxonomy_handle';
+   $collection->taxonomies($collectionTaxonomies);
+   $collection->save();
+   ```
 
-## Actual Behavior and Potential Misunderstanding
-
-While the documentation suggests that the `taxonomies` method accepts an array of taxonomy handles, it's important to note that calling `$collection->taxonomies()` returns an object rather than an array. To illustrate, using Laravel's `Log::info` to inspect the return value:
-
-```php
-Log::info(print_r($collection->taxonomies(), true));
-```
-
-This will log an object structure similar to:
-
-```
-local.INFO: Illuminate\Support\Collection Object
-(
-    [items:protected] => Array
-        (
-            [0] => Statamic\Taxonomies\Taxonomy Object
-                (
-                    [handle:protected] => tags
-                    [title:protected] => Tags
-                    // ... other properties
-                )
-        )
-    // ... other properties
-)
-```
-
-This indicates that `$collection->taxonomies()` returns an `Illuminate\Support\Collection` containing `Statamic\Taxonomies\Taxonomy` objects, not a simple array of strings. This behavior may be misleading if you're expecting an array based on the documentation.
-
-## Why the Following Code Doesn't Work
-
-Attempting to modify the collection's taxonomies using the following code will not work as intended:
-
-```php
-$collectionTaxonomies = $collection->taxonomies();
-$collectionTaxonomies[] = 'new_taxonomy_handle';
-$collection->taxonomies($collectionTaxonomies);
-```
-
-**Explanation:**
-
-1. `$collection->taxonomies()` returns an `Illuminate\Support\Collection` object containing `Taxonomy` objects, not an array.
-2. Attempting to append a string (`'new_taxonomy_handle'`) to this collection object is not valid and will result in an error.
-
-## Correct Approach
-
-To properly add a new taxonomy to the collection, you should first retrieve the current taxonomies, extract their handles, add the new handle, and then set the updated list back to the collection:
-
-```php
-// Retrieve current taxonomies and extract their handles
-$collectionTaxonomies = $collection->taxonomies()->pluck('handle')->toArray();
-
-// Add the new taxonomy handle
-$collectionTaxonomies[] = 'new_taxonomy_handle';
-
-// Update the collection's taxonomies
-$collection->taxonomies($collectionTaxonomies); 
-
-// Save the collection's taxonomies
-$collection->save();
-```
-
-
-
-**Explanation:**
-
-1. `$collection->taxonomies()` retrieves the current taxonomies as an `Illuminate\Support\Collection` of `Taxonomy` objects.
-2. `pluck('handle')` extracts the `handle` property from each `Taxonomy` object, resulting in a collection of strings.
-3. `toArray()` converts the collection of handles into a plain array.
-4. Appending `'new_taxonomy_handle'` to this array is valid.
-5. Finally, `$collection->taxonomies($collectionTaxonomies)` sets the collection's taxonomies to the updated array of handles.
-
-By following this approach, you ensure that the collection's taxonomies are managed correctly without encountering errors due to type mismatches.
+For a detailed explanation, see [collection-taxonomies.md](./collection-taxonomies.md).
