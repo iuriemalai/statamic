@@ -23,5 +23,3 @@ In Statamic, the `taxonomies` method is used to define or retrieve taxonomies as
    $collection->taxonomies($collectionTaxonomies);
    $collection->save();
    ```
-
-For a detailed explanation, see [collection-taxonomies.md](./collection-taxonomies.md).
